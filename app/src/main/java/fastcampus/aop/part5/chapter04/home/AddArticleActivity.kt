@@ -17,8 +17,9 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
+import fastcampus.aop.part5.chapter04.CameraActivity
 import fastcampus.aop.part5.chapter04.DBKey.Companion.DB_ARTICLES
-import fastcampus.aop.part5.chapter04.R
+import fastcampus.aop.part5.chapter04.databinding.ActivityAddArticleBinding
 
 class AddArticleActivity : AppCompatActivity() {
 
@@ -35,33 +36,26 @@ class AddArticleActivity : AppCompatActivity() {
         Firebase.database.reference.child(DB_ARTICLES)
     }
 
+    companion object {
+        const val PERMISSION_REQUEST_CODE = 1000
+        const val GALLERY_REQUEST_CODE = 1001
+        const val CAMERA_REQUEST_CODE = 1002
+    }
+
+    private lateinit var binding: ActivityAddArticleBinding
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_add_article)
+        binding = ActivityAddArticleBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        findViewById<Button>(R.id.imageAddButton).setOnClickListener {
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    android.Manifest.permission.READ_EXTERNAL_STORAGE
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    startContentProvider()
-                }
-                shouldShowRequestPermissionRationale(android.Manifest.permission.READ_EXTERNAL_STORAGE) -> {
-                    showPermissionContextPopup()
-                }
-                else -> {
-                    requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1010)
-                }
-
-
-            }
-
+        binding.imageAddButton.setOnClickListener {
+            showPictureUploadDialog()
         }
 
-        findViewById<Button>(R.id.submitButton).setOnClickListener {
-            val title = findViewById<EditText>(R.id.titleEditText).text.toString()
-            val price = findViewById<EditText>(R.id.priceEditText).text.toString()
+        binding.submitButton.setOnClickListener {
+            val title = binding.titleEditText.text.toString()
+            val price = binding.priceEditText.text.toString()
             val sellerId = auth.currentUser?.uid.orEmpty()
 
             showProgress()
@@ -115,7 +109,7 @@ class AddArticleActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         when (requestCode) {
-            1010 ->
+            PERMISSION_REQUEST_CODE ->
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     startContentProvider()
                 } else {
@@ -127,16 +121,20 @@ class AddArticleActivity : AppCompatActivity() {
     private fun startContentProvider() {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         intent.type = "image/*"
-        startActivityForResult(intent, 2020)
+        startActivityForResult(intent, GALLERY_REQUEST_CODE)
+    }
 
+    private fun startCameraScreen() {
+        val intent = Intent(this, CameraActivity::class.java)
+        startActivityForResult(intent, CAMERA_REQUEST_CODE)
     }
 
     private fun showProgress() {
-        findViewById<ProgressBar>(R.id.progressBar).isVisible = true
+        binding.progressBar.isVisible = true
     }
 
     private fun hideProgress() {
-        findViewById<ProgressBar>(R.id.progressBar).isVisible = false
+        binding.progressBar.isVisible = false
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -147,18 +145,56 @@ class AddArticleActivity : AppCompatActivity() {
         }
 
         when (requestCode) {
-            2020 -> {
+            GALLERY_REQUEST_CODE -> {
                 val uri = data?.data
                 if (uri != null) {
-                    findViewById<ImageView>(R.id.photoImageView).setImageURI(uri)
+                    binding.photoImageView.setImageURI(uri)
                     selectedUri = uri
                 } else {
                     Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 }
 
             }
+            CAMERA_REQUEST_CODE -> {
+
+            }
             else -> {
                 Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showPictureUploadDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("사진첨부")
+            .setMessage("사진첨부할 방식을 선택하세요")
+            .setPositiveButton("카메라") { _, _ ->
+                checkExternalStoragePermission {
+                    startCameraScreen()
+                }
+            }
+            .setNegativeButton("갤러리") { _, _ ->
+                checkExternalStoragePermission {
+                    startContentProvider()
+                }
+            }
+            .create()
+            .show()
+    }
+
+    private fun checkExternalStoragePermission(uploadAction: () -> Unit) {
+        when {
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                uploadAction()
+            }
+            shouldShowRequestPermissionRationale(android.Manifest.permission.READ_EXTERNAL_STORAGE) -> {
+                showPermissionContextPopup()
+            }
+            else -> {
+                requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSION_REQUEST_CODE)
             }
         }
     }
@@ -168,7 +204,7 @@ class AddArticleActivity : AppCompatActivity() {
             .setTitle("권한이 필요합니다.")
             .setMessage("사진을 가져오기 위해 필요합니다.")
             .setPositiveButton("동의") { _, _ ->
-                requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), 1010)
+                requestPermissions(arrayOf(android.Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSION_REQUEST_CODE)
             }
             .create()
             .show()

@@ -25,6 +25,8 @@
         <activity android:name=".home.AddArticleActivity"/>
         <activity android:name=".chatdetail.ChatRoomActivity"/>
         <activity android:name=".CameraActivity"/>
+        <activity android:name=".ImagePreviewListActivity"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"/>
     </application>
 
 </manifest>

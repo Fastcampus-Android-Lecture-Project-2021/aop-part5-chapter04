@@ -2,7 +2,9 @@ package fastcampus.aop.part5.chapter04
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.display.DisplayManager
 import android.media.MediaScannerConnection
@@ -31,6 +33,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.collections.ArrayList
 
 class CameraActivity : AppCompatActivity() {
 
@@ -54,7 +57,7 @@ class CameraActivity : AppCompatActivity() {
 
     private var isFlashEnabled: Boolean = false
 
-    private var uriList = mutableListOf<Uri>()
+    private var uriList = arrayListOf<Uri>()
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = Unit
@@ -171,7 +174,10 @@ class CameraActivity : AppCompatActivity() {
 
     private fun bindPreviewImageViewClickListener() = with(binding) {
         previewImageVIew.setOnClickListener {
-            startActivity(ImageListActivity.newIntent(this@CameraActivity, uriList))
+            startActivityForResult(
+                ImagePreviewListActivity.newIntent(this@CameraActivity, uriList),
+                CONFIRM_IMAGE_REQUEST_CODE
+            )
         }
     }
 
@@ -239,13 +245,25 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CONFIRM_IMAGE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            setResult(Activity.RESULT_OK, data)
+            finish()
+        }
+    }
+
     companion object {
-        const val TAG = "MainActivity"
+        const val TAG = "CameraActivity"
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
 
         private val LENS_FACING: Int = CameraSelector.LENS_FACING_BACK
+
+        const val CONFIRM_IMAGE_REQUEST_CODE = 3000
+
+        private const val URI_LIST_KEY = "uriList"
     }
 
 }

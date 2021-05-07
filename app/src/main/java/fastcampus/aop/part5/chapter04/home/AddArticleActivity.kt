@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -156,7 +157,10 @@ class AddArticleActivity : AppCompatActivity() {
 
             }
             CAMERA_REQUEST_CODE -> {
-
+                data?.let {
+                    val uriList = it.getParcelableArrayListExtra<Uri>("uriList")
+                    Log.e("uriList", uriList.toString())
+                }
             }
             else -> {
                 Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()

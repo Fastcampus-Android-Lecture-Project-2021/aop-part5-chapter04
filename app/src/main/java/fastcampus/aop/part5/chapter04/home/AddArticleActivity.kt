@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -21,6 +20,7 @@ import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
 import fastcampus.aop.part5.chapter04.CameraActivity
 import fastcampus.aop.part5.chapter04.DBKey.Companion.DB_ARTICLES
+import fastcampus.aop.part5.chapter04.adapter.PhotoListAdapter
 import fastcampus.aop.part5.chapter04.databinding.ActivityAddArticleBinding
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
@@ -40,6 +40,11 @@ class AddArticleActivity : AppCompatActivity() {
         Firebase.database.reference.child(DB_ARTICLES)
     }
 
+    private val photoListAdapter = PhotoListAdapter(
+        photoItemClickListener = { uri, index -> },
+        removePhotoListener = { uri -> removePhoto(uri) }
+    )
+
     companion object {
         const val PERMISSION_REQUEST_CODE = 1000
         const val GALLERY_REQUEST_CODE = 1001
@@ -53,11 +58,17 @@ class AddArticleActivity : AppCompatActivity() {
         binding = ActivityAddArticleBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.imageAddButton.setOnClickListener {
+        initViews()
+    }
+
+    private fun initViews() = with(binding) {
+        photoRecyclerView.adapter = photoListAdapter
+
+        imageAddButton.setOnClickListener {
             showPictureUploadDialog()
         }
 
-        binding.submitButton.setOnClickListener {
+        submitButton.setOnClickListener {
             val title = binding.titleEditText.text.toString()
             val price = binding.priceEditText.text.toString()
             val sellerId = auth.currentUser?.uid.orEmpty()
@@ -169,8 +180,8 @@ class AddArticleActivity : AppCompatActivity() {
             GALLERY_REQUEST_CODE -> {
                 val uri = data?.data
                 if (uri != null) {
-                    binding.photoImageView.setImageURI(uri)
                     imageUriList.add(uri)
+                    photoListAdapter.setPhotoList(imageUriList)
                 } else {
                     Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 }
@@ -179,8 +190,10 @@ class AddArticleActivity : AppCompatActivity() {
             CAMERA_REQUEST_CODE -> {
                 data?.let {
                     val uriList = it.getParcelableArrayListExtra<Uri>("uriList")
-                    Log.e("uriList", uriList.toString())
-                    uriList?.let { list -> imageUriList.addAll(list) }
+                    uriList?.let { list ->
+                        imageUriList.addAll(list)
+                        photoListAdapter.setPhotoList(imageUriList)
+                    }
                 }
             }
             else -> {
@@ -249,7 +262,7 @@ class AddArticleActivity : AppCompatActivity() {
                 "$uri\n"
             } + "그럼에도 불구하고 업로드 하시겠습니까?")
             .setPositiveButton("업로드") { _, _ ->
-                uploadArticle(title, price, sellerId, successResults)
+                uploadArticle(sellerId, title, price, successResults)
             }
             .create()
             .show()
@@ -258,6 +271,11 @@ class AddArticleActivity : AppCompatActivity() {
     private fun uploadError() {
         Toast.makeText(this, "사진 업로드에 실패했습니다.", Toast.LENGTH_SHORT).show()
         hideProgress()
+    }
+
+    private fun removePhoto(uri: Uri) {
+        imageUriList.remove(uri)
+        photoListAdapter.setPhotoList(imageUriList)
     }
 
 }

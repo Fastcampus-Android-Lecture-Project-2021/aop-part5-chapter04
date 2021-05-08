@@ -33,16 +33,17 @@ class GalleryActivity : AppCompatActivity() {
         binding = ActivityGalleryBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        initViews()
         viewModel.fetchData()
         observeState()
     }
 
     private fun observeState() = viewModel.galleryStateLiveData.observe(this) {
         when (it) {
-            is GalleryState.Uninitialized -> initViews()
             is GalleryState.Loading -> handleLoading()
             is GalleryState.Success -> handleSuccess(it)
             is GalleryState.Confirm -> handleConfirm(it)
+            else -> Unit
         }
     }
 

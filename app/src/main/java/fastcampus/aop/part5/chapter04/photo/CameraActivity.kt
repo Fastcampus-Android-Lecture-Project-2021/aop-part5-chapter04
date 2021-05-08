@@ -1,4 +1,4 @@
-package fastcampus.aop.part5.chapter04
+package fastcampus.aop.part5.chapter04.photo
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -24,6 +24,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import fastcampus.aop.part5.chapter04.ImagePreviewListActivity
 import fastcampus.aop.part5.chapter04.extensions.loadCenterCrop
 import fastcampus.aop.part5.chapter04.util.PathUtil
 import fastcampus.aop.part5.chapter04.databinding.ActivityCameraBinding
@@ -33,7 +34,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.collections.ArrayList
 
 class CameraActivity : AppCompatActivity() {
 

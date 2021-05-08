@@ -18,10 +18,11 @@ import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.ktx.storage
-import fastcampus.aop.part5.chapter04.CameraActivity
+import fastcampus.aop.part5.chapter04.photo.CameraActivity
 import fastcampus.aop.part5.chapter04.DBKey.Companion.DB_ARTICLES
 import fastcampus.aop.part5.chapter04.adapter.PhotoListAdapter
 import fastcampus.aop.part5.chapter04.databinding.ActivityAddArticleBinding
+import fastcampus.aop.part5.chapter04.gallery.GalleryActivity
 import kotlinx.coroutines.*
 import kotlinx.coroutines.tasks.await
 
@@ -136,17 +137,18 @@ class AddArticleActivity : AppCompatActivity() {
         when (requestCode) {
             PERMISSION_REQUEST_CODE ->
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    startContentProvider()
+                    startGalleryScreen()
                 } else {
                     Toast.makeText(this, "권한을 거부하셨습니다.", Toast.LENGTH_SHORT).show()
                 }
         }
     }
 
-    private fun startContentProvider() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT)
-        intent.type = "image/*"
-        startActivityForResult(intent, GALLERY_REQUEST_CODE)
+    private fun startGalleryScreen() {
+        startActivityForResult(
+            GalleryActivity.newIntent(this),
+            GALLERY_REQUEST_CODE
+        )
     }
 
     private fun startCameraScreen() {
@@ -171,14 +173,15 @@ class AddArticleActivity : AppCompatActivity() {
 
         when (requestCode) {
             GALLERY_REQUEST_CODE -> {
-                val uri = data?.data
-                if (uri != null) {
-                    imageUriList.add(uri)
-                    photoListAdapter.setPhotoList(imageUriList)
-                } else {
+                data?.let {
+                    val uriList = it.getParcelableArrayListExtra<Uri>("uriList")
+                    uriList?.let { list ->
+                        imageUriList.addAll(list)
+                        photoListAdapter.setPhotoList(imageUriList)
+                    }
+                } ?: kotlin.run {
                     Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 }
-
             }
             CAMERA_REQUEST_CODE -> {
                 data?.let {
@@ -187,6 +190,8 @@ class AddArticleActivity : AppCompatActivity() {
                         imageUriList.addAll(list)
                         photoListAdapter.setPhotoList(imageUriList)
                     }
+                } ?: kotlin.run {
+                    Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 }
             }
             else -> {
@@ -206,7 +211,7 @@ class AddArticleActivity : AppCompatActivity() {
             }
             .setNegativeButton("갤러리") { _, _ ->
                 checkExternalStoragePermission {
-                    startContentProvider()
+                    startGalleryScreen()
                 }
             }
             .create()

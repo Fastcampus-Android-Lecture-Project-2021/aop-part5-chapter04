@@ -8,25 +8,20 @@ import fastcampus.aop.part5.chapter04.databinding.ViewholderPhotoItemBinding
 import fastcampus.aop.part5.chapter04.extensions.loadCenterCrop
 
 class PhotoListAdapter(
-    private val photoItemClickListener: (Uri, Int) -> Unit,
     private val removePhotoListener: (Uri) -> Unit
 ) : RecyclerView.Adapter<PhotoListAdapter.ProductItemViewHolder>() {
 
     private var imageUriList: List<Uri> = listOf()
 
     inner class ProductItemViewHolder(
-        private val binding: ViewholderPhotoItemBinding,
-        val productItemClickListener: (Uri, Int) -> Unit
+        private val binding: ViewholderPhotoItemBinding
     ) : RecyclerView.ViewHolder(binding.root) {
 
         fun bindData(data: Uri) = with(binding) {
             photoImageView.loadCenterCrop(data.toString(), 8f)
         }
 
-        fun bindViews(data: Uri, position: Int) = with(binding) {
-            root.setOnClickListener {
-                productItemClickListener(data, position)
-            }
+        fun bindViews(data: Uri) = with(binding) {
             closeButton.setOnClickListener {
                 removePhotoListener(data)
             }
@@ -36,12 +31,12 @@ class PhotoListAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductItemViewHolder {
         val view = ViewholderPhotoItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ProductItemViewHolder(view, photoItemClickListener)
+        return ProductItemViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ProductItemViewHolder, position: Int) {
         holder.bindData(imageUriList[position])
-        holder.bindViews(imageUriList[position], position)
+        holder.bindViews(imageUriList[position])
     }
 
     override fun getItemCount(): Int = imageUriList.size

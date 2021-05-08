@@ -40,10 +40,7 @@ class AddArticleActivity : AppCompatActivity() {
         Firebase.database.reference.child(DB_ARTICLES)
     }
 
-    private val photoListAdapter = PhotoListAdapter(
-        photoItemClickListener = { uri, index -> },
-        removePhotoListener = { uri -> removePhoto(uri) }
-    )
+    private val photoListAdapter = PhotoListAdapter { uri -> removePhoto(uri) }
 
     companion object {
         const val PERMISSION_REQUEST_CODE = 1000

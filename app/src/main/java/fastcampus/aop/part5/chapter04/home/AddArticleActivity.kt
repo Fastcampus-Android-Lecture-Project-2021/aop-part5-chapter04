@@ -11,6 +11,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DatabaseReference
@@ -21,10 +22,12 @@ import com.google.firebase.storage.ktx.storage
 import fastcampus.aop.part5.chapter04.CameraActivity
 import fastcampus.aop.part5.chapter04.DBKey.Companion.DB_ARTICLES
 import fastcampus.aop.part5.chapter04.databinding.ActivityAddArticleBinding
+import kotlinx.coroutines.*
+import kotlinx.coroutines.tasks.await
 
 class AddArticleActivity : AppCompatActivity() {
 
-    private var selectedUri: Uri? = null
+    private var imageUriList: ArrayList<Uri> = arrayListOf()
     private val auth: FirebaseAuth by lazy {
         Firebase.auth
     }
@@ -62,44 +65,61 @@ class AddArticleActivity : AppCompatActivity() {
             showProgress()
 
             // 중간에 이미지가 있으면 업로드 과정을 추가
-            if (selectedUri != null) {
-                val photoUri = selectedUri ?: return@setOnClickListener
-                uploadPhoto(photoUri,
-                    successHandler = { uri ->
-                        uploadArticle(sellerId, title, price, uri)
-                    },
-                    errorHandler = {
-                        Toast.makeText(this, "사진 업로드에 실패했습니다.", Toast.LENGTH_SHORT).show()
-                        hideProgress()
-                    }
-                )
+            if (imageUriList.isNotEmpty()) {
+                lifecycleScope.launch {
+                    val results = uploadPhoto(imageUriList)
+                    afterUploadPhoto(results, title, price, sellerId)
+                }
             } else {
-                uploadArticle(sellerId, title, price, "")
+                uploadArticle(sellerId, title, price, listOf())
             }
         }
     }
 
-    private fun uploadPhoto(uri: Uri, successHandler: (String) -> Unit, errorHandler: () -> Unit) {
-        val fileName = "${System.currentTimeMillis()}.png"
-        storage.reference.child("article/photo").child(fileName)
-            .putFile(uri)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    storage.reference.child("article/photo").child(fileName)
-                        .downloadUrl
-                        .addOnSuccessListener { uri ->
-                            successHandler(uri.toString())
-                        }.addOnFailureListener {
-                            errorHandler()
-                        }
-                } else {
-                    errorHandler()
+    private suspend fun uploadPhoto(uriList: List<Uri>) = withContext(Dispatchers.IO) {
+        val uploadDeferred: List<Deferred<Any>> = uriList.mapIndexed { index, uri ->
+            lifecycleScope.async {
+                try {
+                    val fileName = "image${index}.png"
+                    if (index % 2 == 0) {
+                        throw Exception()
+                    } else {
+                        return@async storage.reference.child("article/photo").child(fileName)
+                            .putFile(uri)
+                            .await()
+                            .storage
+                            .downloadUrl
+                            .await()
+                            .toString()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    return@async Pair(uri, e)
                 }
             }
+        }
+        return@withContext uploadDeferred.awaitAll()
     }
 
-    private fun uploadArticle(sellerId: String, title: String, price: String, imageUrl: String) {
-        val model = ArticleModel(sellerId, title, System.currentTimeMillis(), "$price 원", imageUrl)
+    private fun afterUploadPhoto(results: List<Any>, title: String, price: String, sellerId: String) {
+        val errorResults = results.filterIsInstance<Pair<Uri, Exception>>()
+        val successResults = results.filterIsInstance<String>()
+
+        when {
+            errorResults.isNotEmpty() && successResults.isNotEmpty() -> {
+                photoUploadErrorButContinurDialog(errorResults, successResults, title, price, sellerId)
+            }
+            errorResults.isNotEmpty() && successResults.isEmpty() -> {
+                uploadError()
+            }
+            else -> {
+                uploadArticle(sellerId, title, price, successResults)
+            }
+        }
+    }
+
+    private fun uploadArticle(sellerId: String, title: String, price: String, imageUrlList: List<String>) {
+        val model = ArticleModel(sellerId, title, System.currentTimeMillis(), "$price 원", imageUrlList)
         articleDB.push().setValue(model)
 
         hideProgress()
@@ -150,7 +170,7 @@ class AddArticleActivity : AppCompatActivity() {
                 val uri = data?.data
                 if (uri != null) {
                     binding.photoImageView.setImageURI(uri)
-                    selectedUri = uri
+                    imageUriList.add(uri)
                 } else {
                     Toast.makeText(this, "사진을 가져오지 못했습니다.", Toast.LENGTH_SHORT).show()
                 }
@@ -160,6 +180,7 @@ class AddArticleActivity : AppCompatActivity() {
                 data?.let {
                     val uriList = it.getParcelableArrayListExtra<Uri>("uriList")
                     Log.e("uriList", uriList.toString())
+                    uriList?.let { list -> imageUriList.addAll(list) }
                 }
             }
             else -> {
@@ -213,6 +234,30 @@ class AddArticleActivity : AppCompatActivity() {
             .create()
             .show()
 
+    }
+
+    private fun photoUploadErrorButContinurDialog(
+        errorResults: List<Pair<Uri, Exception>>,
+        successResults: List<String>,
+        title: String,
+        price: String,
+        sellerId: String
+    ) {
+        AlertDialog.Builder(this)
+            .setTitle("특정 이미지 업로드 실패")
+            .setMessage("업로드에 실패한 이미지가 있습니다." + errorResults.map { (uri, _) ->
+                "$uri\n"
+            } + "그럼에도 불구하고 업로드 하시겠습니까?")
+            .setPositiveButton("업로드") { _, _ ->
+                uploadArticle(title, price, sellerId, successResults)
+            }
+            .create()
+            .show()
+    }
+
+    private fun uploadError() {
+        Toast.makeText(this, "사진 업로드에 실패했습니다.", Toast.LENGTH_SHORT).show()
+        hideProgress()
     }
 
 }

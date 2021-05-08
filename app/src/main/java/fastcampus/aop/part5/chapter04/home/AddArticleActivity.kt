@@ -68,7 +68,7 @@ class AddArticleActivity : AppCompatActivity() {
 
         submitButton.setOnClickListener {
             val title = binding.titleEditText.text.toString()
-            val price = binding.priceEditText.text.toString()
+            val content = binding.contentEditText.text.toString()
             val sellerId = auth.currentUser?.uid.orEmpty()
 
             showProgress()
@@ -77,10 +77,10 @@ class AddArticleActivity : AppCompatActivity() {
             if (imageUriList.isNotEmpty()) {
                 lifecycleScope.launch {
                     val results = uploadPhoto(imageUriList)
-                    afterUploadPhoto(results, title, price, sellerId)
+                    afterUploadPhoto(results, title, content, sellerId)
                 }
             } else {
-                uploadArticle(sellerId, title, price, listOf())
+                uploadArticle(sellerId, title, content, listOf())
             }
         }
     }
@@ -106,25 +106,25 @@ class AddArticleActivity : AppCompatActivity() {
         return@withContext uploadDeferred.awaitAll()
     }
 
-    private fun afterUploadPhoto(results: List<Any>, title: String, price: String, sellerId: String) {
+    private fun afterUploadPhoto(results: List<Any>, title: String, content: String, sellerId: String) {
         val errorResults = results.filterIsInstance<Pair<Uri, Exception>>()
         val successResults = results.filterIsInstance<String>()
 
         when {
             errorResults.isNotEmpty() && successResults.isNotEmpty() -> {
-                photoUploadErrorButContinurDialog(errorResults, successResults, title, price, sellerId)
+                photoUploadErrorButContinurDialog(errorResults, successResults, title, content, sellerId)
             }
             errorResults.isNotEmpty() && successResults.isEmpty() -> {
                 uploadError()
             }
             else -> {
-                uploadArticle(sellerId, title, price, successResults)
+                uploadArticle(sellerId, title, content, successResults)
             }
         }
     }
 
-    private fun uploadArticle(sellerId: String, title: String, price: String, imageUrlList: List<String>) {
-        val model = ArticleModel(sellerId, title, System.currentTimeMillis(), "$price 원", imageUrlList)
+    private fun uploadArticle(sellerId: String, title: String, content: String, imageUrlList: List<String>) {
+        val model = ArticleModel(sellerId, title, System.currentTimeMillis(), content, imageUrlList)
         articleDB.push().setValue(model)
 
         hideProgress()
@@ -251,7 +251,7 @@ class AddArticleActivity : AppCompatActivity() {
         errorResults: List<Pair<Uri, Exception>>,
         successResults: List<String>,
         title: String,
-        price: String,
+        content: String,
         sellerId: String
     ) {
         AlertDialog.Builder(this)
@@ -260,7 +260,7 @@ class AddArticleActivity : AppCompatActivity() {
                 "$uri\n"
             } + "그럼에도 불구하고 업로드 하시겠습니까?")
             .setPositiveButton("업로드") { _, _ ->
-                uploadArticle(sellerId, title, price, successResults)
+                uploadArticle(sellerId, title, content, successResults)
             }
             .create()
             .show()

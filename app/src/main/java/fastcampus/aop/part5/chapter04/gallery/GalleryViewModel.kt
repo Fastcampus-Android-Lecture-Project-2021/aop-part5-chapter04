@@ -8,10 +8,6 @@ import kotlinx.coroutines.launch
 
 class GalleryViewModel : ViewModel() {
 
-    companion object {
-        const val MAX_SELECT_COUNT = 10
-    }
-
     private val galleryPhotoRepository by lazy { GalleryPhotoRepository(appContext!!) }
 
     private lateinit var photoList: MutableList<GalleryPhoto>

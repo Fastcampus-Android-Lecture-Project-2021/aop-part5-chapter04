@@ -100,9 +100,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 Snackbar.make(view, "로그인 후 사용해주세요", Snackbar.LENGTH_LONG).show()
             }
 
-
-
-
         })
 
         fragmentHomeBinding.articleRecyclerView.layoutManager = LinearLayoutManager(context)

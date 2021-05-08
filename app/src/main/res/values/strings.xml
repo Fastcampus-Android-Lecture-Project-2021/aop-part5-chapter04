@@ -6,4 +6,7 @@
     <string name="images_page">(%d/%d)</string>
     <string name="confirm">확인</string>
     <string name="feed">피드</string>
+    <string name="add_feed">피드 등록</string>
+    <string name="article_title">글 제목</string>
+    <string name="feed_content">피드 내용</string>
 </resources>

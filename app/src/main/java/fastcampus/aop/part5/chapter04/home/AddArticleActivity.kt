@@ -89,17 +89,13 @@ class AddArticleActivity : AppCompatActivity() {
             lifecycleScope.async {
                 try {
                     val fileName = "image${index}.png"
-                    if (index % 2 == 0) {
-                        throw Exception()
-                    } else {
-                        return@async storage.reference.child("article/photo").child(fileName)
-                            .putFile(uri)
-                            .await()
-                            .storage
-                            .downloadUrl
-                            .await()
-                            .toString()
-                    }
+                    return@async storage.reference.child("article/photo").child(fileName)
+                        .putFile(uri)
+                        .await()
+                        .storage
+                        .downloadUrl
+                        .await()
+                        .toString()
                 } catch (e: Exception) {
                     e.printStackTrace()
                     return@async Pair(uri, e)

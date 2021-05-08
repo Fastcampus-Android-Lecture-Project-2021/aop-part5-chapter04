@@ -58,7 +58,7 @@ class ImagePreviewListActivity : AppCompatActivity() {
         }
         confirmButton.setOnClickListener {
             setResult(Activity.RESULT_OK, Intent().apply {
-                putExtra(URI_LIST_KEY, ArrayList<Uri>().apply { uriList.forEach { add(it) } })
+                putExtra(URI_LIST_KEY, ArrayList<Uri>().apply { imageViewPagerAdapter.uriList.forEach { add(it) } })
             })
             finish()
         }

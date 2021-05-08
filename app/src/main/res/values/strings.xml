@@ -5,4 +5,5 @@
     <string name="delete">삭제</string>
     <string name="images_page">(%d/%d)</string>
     <string name="confirm">확인</string>
+    <string name="feed">피드</string>
 </resources>
